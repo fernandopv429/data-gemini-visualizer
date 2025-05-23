@@ -1,20 +1,30 @@
-
 import React, { useState } from 'react';
 import { FileUpload } from '@/components/FileUpload';
+import { ApiKeyInput } from '@/components/ApiKeyInput';
 import { DataAnalysis } from '@/components/DataAnalysis';
 import { ChartVisualization } from '@/components/ChartVisualization';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Brain, TrendingUp, Upload, FileText } from 'lucide-react';
+import { Brain, TrendingUp, Upload, FileText, Shield } from 'lucide-react';
 
 const Index = () => {
-  const [currentStep, setCurrentStep] = useState<'upload' | 'analysis' | 'visualization'>('upload');
+  const [currentStep, setCurrentStep] = useState<'setup' | 'upload' | 'analysis' | 'visualization'>('setup');
   const [data, setData] = useState<any[]>([]);
   const [analysis, setAnalysis] = useState<any>(null);
   const [cleanedData, setCleanedData] = useState<any[]>([]);
   const [summary, setSummary] = useState<string>('');
   const [chartDescriptions, setChartDescriptions] = useState<any>(null);
+  const [apiKey, setApiKey] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleApiKeySet = (key: string) => {
+    setApiKey(key);
+    if (key) {
+      setCurrentStep('upload');
+    } else {
+      setCurrentStep('setup');
+    }
+  };
 
   const handleDataLoaded = (loadedData: any[], source: 'csv' | 'sheets') => {
     console.log('Dados carregados:', loadedData);
@@ -33,6 +43,7 @@ const Index = () => {
 
   const getStepIcon = (step: string) => {
     switch (step) {
+      case 'setup': return <Shield className="w-4 h-4" />;
       case 'upload': return <Upload className="w-4 h-4" />;
       case 'analysis': return <Brain className="w-4 h-4" />;
       case 'visualization': return <TrendingUp className="w-4 h-4" />;
@@ -43,9 +54,9 @@ const Index = () => {
   const getStepStatus = (step: string) => {
     if (step === currentStep) return 'default';
     if (
-      (step === 'upload') ||
-      (step === 'analysis' && currentStep === 'visualization') ||
-      (step === 'visualization' && currentStep === 'visualization')
+      (step === 'setup') ||
+      (step === 'upload' && ['analysis', 'visualization'].includes(currentStep)) ||
+      (step === 'analysis' && currentStep === 'visualization')
     ) {
       return 'secondary';
     }
@@ -68,6 +79,7 @@ const Index = () => {
         {/* Progress Steps */}
         <div className="flex justify-center items-center space-x-4 mb-12">
           {[
+            { key: 'setup', label: 'Configuração' },
             { key: 'upload', label: 'Importar Dados' },
             { key: 'analysis', label: 'Análise IA' },
             { key: 'visualization', label: 'Visualização' }
@@ -80,7 +92,7 @@ const Index = () => {
                 {getStepIcon(step.key)}
                 {step.label}
               </Badge>
-              {index < 2 && (
+              {index < 3 && (
                 <div className="w-8 h-0.5 bg-muted mx-2" />
               )}
             </div>
@@ -89,21 +101,21 @@ const Index = () => {
 
         {/* Main Content */}
         <div className="max-w-6xl mx-auto">
-          {currentStep === 'upload' && (
+          {currentStep === 'setup' && (
             <div className="space-y-8">
-              <FileUpload 
-                onDataLoaded={handleDataLoaded} 
-                isLoading={isLoading}
+              <ApiKeyInput 
+                onApiKeySet={handleApiKeySet}
+                hasApiKey={!!apiKey}
               />
               
               {/* Features Cards */}
-              <div className="grid md:grid-cols-3 gap-6 mt-12">
+              <div className="grid md:grid-cols-3 gap-6">
                 <Card className="glass-morphism hover:shadow-lg transition-all duration-300">
                   <CardContent className="p-6 text-center">
-                    <Upload className="w-12 h-12 text-primary mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Importação Fácil</h3>
+                    <Shield className="w-12 h-12 text-primary mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Segurança</h3>
                     <p className="text-sm text-muted-foreground">
-                      Suporte a arquivos CSV e planilhas públicas do Google Sheets
+                      Sua API key fica armazenada apenas no seu navegador
                     </p>
                   </CardContent>
                 </Card>
@@ -131,9 +143,42 @@ const Index = () => {
             </div>
           )}
 
+          {currentStep === 'upload' && (
+            <div className="space-y-8">
+              <FileUpload 
+                onDataLoaded={handleDataLoaded} 
+                isLoading={isLoading}
+              />
+              
+              {/* Features Cards */}
+              <div className="grid md:grid-cols-2 gap-6 mt-12">
+                <Card className="glass-morphism hover:shadow-lg transition-all duration-300">
+                  <CardContent className="p-6 text-center">
+                    <Upload className="w-12 h-12 text-primary mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Importação Fácil</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Suporte a arquivos CSV e planilhas públicas do Google Sheets
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="glass-morphism hover:shadow-lg transition-all duration-300">
+                  <CardContent className="p-6 text-center">
+                    <Brain className="w-12 h-12 text-primary mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Análise Inteligente</h3>
+                    <p className="text-sm text-muted-foreground">
+                      A IA tratará seus dados automaticamente após o upload
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
+
           {currentStep === 'analysis' && data.length > 0 && (
             <DataAnalysis 
               data={data}
+              apiKey={apiKey}
               onAnalysisComplete={handleAnalysisComplete}
             />
           )}

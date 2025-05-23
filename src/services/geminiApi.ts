@@ -1,4 +1,3 @@
-
 /**
  * Serviço para integração com a API Gemini do Google
  * Este módulo gerencia as chamadas para a API de IA
@@ -7,7 +6,6 @@
 import { DataAnalysis } from '@/utils/dataProcessor';
 
 // Configurações da API
-const GEMINI_API_KEY = 'AIzaSyB3veGNMB4iE87qautLdhnT_CuK3j9G3i4';
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
 
 /**
@@ -40,8 +38,8 @@ interface ProcessedDataResponse {
 /**
  * Analisa e trata dados usando a API Gemini
  */
-export const analyzeAndCleanDataWithGemini = async (data: any[]): Promise<ProcessedDataResponse> => {
-  if (!GEMINI_API_KEY) {
+export const analyzeAndCleanDataWithGemini = async (data: any[], apiKey: string): Promise<ProcessedDataResponse> => {
+  if (!apiKey) {
     throw new Error('API Key do Gemini não configurada');
   }
 
@@ -49,16 +47,16 @@ export const analyzeAndCleanDataWithGemini = async (data: any[]): Promise<Proces
     console.log('Iniciando análise e tratamento dos dados com Gemini...');
     
     // Primeiro, analisa e limpa os dados
-    const cleanedData = await cleanDataWithGemini(data);
+    const cleanedData = await cleanDataWithGemini(data, apiKey);
     
     // Depois, faz a análise completa dos dados limpos
-    const analysis = await analyzeDataWithGemini(cleanedData);
+    const analysis = await analyzeDataWithGemini(cleanedData, apiKey);
     
     // Gera resumo geral
-    const summary = await generateSummaryWithGemini(cleanedData, analysis);
+    const summary = await generateSummaryWithGemini(cleanedData, analysis, apiKey);
     
     // Gera descrições para os gráficos
-    const chartDescriptions = await generateChartDescriptions(cleanedData, analysis);
+    const chartDescriptions = await generateChartDescriptions(cleanedData, analysis, apiKey);
     
     return {
       cleanedData,
@@ -76,10 +74,10 @@ export const analyzeAndCleanDataWithGemini = async (data: any[]): Promise<Proces
 /**
  * Limpa e trata os dados usando a API Gemini
  */
-const cleanDataWithGemini = async (data: any[]): Promise<any[]> => {
+const cleanDataWithGemini = async (data: any[], apiKey: string): Promise<any[]> => {
   const prompt = createDataCleaningPrompt(data);
   
-  const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+  const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -94,7 +92,9 @@ const cleanDataWithGemini = async (data: any[]): Promise<any[]> => {
   });
 
   if (!response.ok) {
-    throw new Error(`Erro na API Gemini: ${response.statusText}`);
+    const errorText = await response.text();
+    console.error('Erro na API Gemini:', response.status, errorText);
+    throw new Error(`Erro na API Gemini: ${response.status} ${response.statusText}`);
   }
 
   const result: GeminiResponse = await response.json();
@@ -115,10 +115,10 @@ const cleanDataWithGemini = async (data: any[]): Promise<any[]> => {
 /**
  * Analisa dados usando a API Gemini
  */
-const analyzeDataWithGemini = async (data: any[]): Promise<DataAnalysis> => {
+const analyzeDataWithGemini = async (data: any[], apiKey: string): Promise<DataAnalysis> => {
   const prompt = createAnalysisPrompt(data);
   
-  const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+  const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -133,7 +133,9 @@ const analyzeDataWithGemini = async (data: any[]): Promise<DataAnalysis> => {
   });
 
   if (!response.ok) {
-    throw new Error(`Erro na API Gemini: ${response.statusText}`);
+    const errorText = await response.text();
+    console.error('Erro na API Gemini:', response.status, errorText);
+    throw new Error(`Erro na API Gemini: ${response.status} ${response.statusText}`);
   }
 
   const result: GeminiResponse = await response.json();
@@ -149,7 +151,7 @@ const analyzeDataWithGemini = async (data: any[]): Promise<DataAnalysis> => {
 /**
  * Gera resumo geral dos dados
  */
-const generateSummaryWithGemini = async (data: any[], analysis: DataAnalysis): Promise<string> => {
+const generateSummaryWithGemini = async (data: any[], analysis: DataAnalysis, apiKey: string): Promise<string> => {
   const prompt = `
 Baseado nos seguintes dados analisados, crie um resumo executivo em português:
 
@@ -167,7 +169,7 @@ Crie um resumo executivo de 2-3 parágrafos explicando:
 Retorne apenas o texto do resumo, sem formatação JSON.
 `;
 
-  const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+  const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -182,7 +184,9 @@ Retorne apenas o texto do resumo, sem formatação JSON.
   });
 
   if (!response.ok) {
-    throw new Error(`Erro na API Gemini para resumo: ${response.statusText}`);
+    const errorText = await response.text();
+    console.error('Erro na API Gemini para resumo:', response.status, errorText);
+    throw new Error(`Erro na API Gemini para resumo: ${response.status} ${response.statusText}`);
   }
 
   const result: GeminiResponse = await response.json();
@@ -192,7 +196,7 @@ Retorne apenas o texto do resumo, sem formatação JSON.
 /**
  * Gera descrições para os gráficos
  */
-const generateChartDescriptions = async (data: any[], analysis: DataAnalysis): Promise<{bar: string, line: string, pie: string}> => {
+const generateChartDescriptions = async (data: any[], analysis: DataAnalysis, apiKey: string): Promise<{bar: string, line: string, pie: string}> => {
   const prompt = `
 Baseado nos dados fornecidos, crie descrições específicas para cada tipo de gráfico em português:
 
@@ -210,7 +214,7 @@ Retorne um JSON com as seguintes chaves:
 As descrições devem explicar o que cada gráfico mostra especificamente com estes dados.
 `;
 
-  const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+  const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -225,7 +229,9 @@ As descrições devem explicar o que cada gráfico mostra especificamente com es
   });
 
   if (!response.ok) {
-    throw new Error(`Erro na API Gemini para descrições: ${response.statusText}`);
+    const errorText = await response.text();
+    console.error('Erro na API Gemini para descrições:', response.status, errorText);
+    throw new Error(`Erro na API Gemini para descrições: ${response.status} ${response.statusText}`);
   }
 
   const result: GeminiResponse = await response.json();

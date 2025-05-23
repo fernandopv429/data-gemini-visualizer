@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Brain, CheckCircle, AlertTriangle, TrendingUp, Loader2, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,23 +9,33 @@ import { analyzeAndCleanDataWithGemini } from '@/services/geminiApi';
 
 interface DataAnalysisProps {
   data: any[];
+  apiKey: string;
   onAnalysisComplete: (analysis: any, cleanedData: any[], summary: string, chartDescriptions: any) => void;
 }
 
-export const DataAnalysis: React.FC<DataAnalysisProps> = ({ data, onAnalysisComplete }) => {
+export const DataAnalysis: React.FC<DataAnalysisProps> = ({ data, apiKey, onAnalysisComplete }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<any>(null);
   const [summary, setSummary] = useState<string>('');
   const { toast } = useToast();
 
   const analyzeData = async () => {
+    if (!apiKey) {
+      toast({
+        title: "API Key necessária",
+        description: "Por favor, configure sua API key do Gemini primeiro",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsAnalyzing(true);
     
     try {
       console.log('Iniciando análise completa dos dados...');
       
       // Chama a API Gemini para análise completa
-      const result = await analyzeAndCleanDataWithGemini(data);
+      const result = await analyzeAndCleanDataWithGemini(data, apiKey);
       
       setAnalysis(result.analysis);
       setSummary(result.summary);
@@ -42,7 +51,7 @@ export const DataAnalysis: React.FC<DataAnalysisProps> = ({ data, onAnalysisComp
       console.error('Erro na análise:', error);
       toast({
         title: "Erro na análise",
-        description: "Não foi possível analisar os dados. Verifique sua conexão e tente novamente.",
+        description: "Não foi possível analisar os dados. Verifique sua API key e conexão.",
         variant: "destructive",
       });
     } finally {
@@ -66,7 +75,7 @@ export const DataAnalysis: React.FC<DataAnalysisProps> = ({ data, onAnalysisComp
             </p>
             <Button 
               onClick={analyzeData}
-              disabled={isAnalyzing}
+              disabled={isAnalyzing || !apiKey}
               className="animate-pulse-glow"
               size="lg"
             >
