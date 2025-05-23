@@ -1,78 +1,48 @@
 
 import React, { useState } from 'react';
-import { Brain, CheckCircle, AlertTriangle, TrendingUp, Loader2 } from 'lucide-react';
+import { Brain, CheckCircle, AlertTriangle, TrendingUp, Loader2, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
+import { analyzeAndCleanDataWithGemini } from '@/services/geminiApi';
 
 interface DataAnalysisProps {
   data: any[];
-  onAnalysisComplete: (analysis: any, cleanedData: any[]) => void;
+  onAnalysisComplete: (analysis: any, cleanedData: any[], summary: string, chartDescriptions: any) => void;
 }
 
 export const DataAnalysis: React.FC<DataAnalysisProps> = ({ data, onAnalysisComplete }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<any>(null);
+  const [summary, setSummary] = useState<string>('');
   const { toast } = useToast();
 
   const analyzeData = async () => {
     setIsAnalyzing(true);
     
     try {
-      // Simular análise com Gemini API
-      // Em uma implementação real, você faria uma requisição para a API Gemini
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      console.log('Iniciando análise completa dos dados...');
       
-      const mockAnalysis = {
-        dataQuality: {
-          totalRows: data.length,
-          duplicates: Math.floor(data.length * 0.1),
-          missingValues: Math.floor(data.length * 0.05),
-          inconsistencies: Math.floor(data.length * 0.03),
-        },
-        suggestions: [
-          'Converter campos de data para formato ISO',
-          'Padronizar nomes de cidades (capitalização)',
-          'Remover espaços extras nos campos de texto',
-          'Validar e corrigir valores numéricos inconsistentes'
-        ],
-        recommendedCharts: [
-          { type: 'bar', reason: 'Ideal para comparar categorias de dados', confidence: 95 },
-          { type: 'line', reason: 'Mostra tendências ao longo do tempo', confidence: 80 },
-          { type: 'pie', reason: 'Representa distribuição de categorias', confidence: 75 }
-        ],
-        dataTypes: {
-          numeric: ['idade', 'valor', 'quantidade'],
-          categorical: ['cidade', 'categoria', 'status'],
-          temporal: ['data', 'timestamp']
-        }
-      };
-
-      // Simular dados limpos
-      const cleanedData = data.map(row => {
-        const cleaned = { ...row };
-        // Simular limpeza de dados
-        Object.keys(cleaned).forEach(key => {
-          if (typeof cleaned[key] === 'string') {
-            cleaned[key] = cleaned[key].trim();
-          }
-        });
-        return cleaned;
-      });
-
-      setAnalysis(mockAnalysis);
-      onAnalysisComplete(mockAnalysis, cleanedData);
+      // Chama a API Gemini para análise completa
+      const result = await analyzeAndCleanDataWithGemini(data);
+      
+      setAnalysis(result.analysis);
+      setSummary(result.summary);
+      
+      // Passa todos os resultados para o componente pai
+      onAnalysisComplete(result.analysis, result.cleanedData, result.summary, result.chartDescriptions);
       
       toast({
         title: "Análise concluída!",
-        description: "Os dados foram analisados e otimizados pela IA",
+        description: "Os dados foram analisados, tratados e otimizados pela IA Gemini",
       });
     } catch (error) {
+      console.error('Erro na análise:', error);
       toast({
         title: "Erro na análise",
-        description: "Não foi possível analisar os dados. Tente novamente.",
+        description: "Não foi possível analisar os dados. Verifique sua conexão e tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -86,13 +56,13 @@ export const DataAnalysis: React.FC<DataAnalysisProps> = ({ data, onAnalysisComp
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Brain className="w-5 h-5 text-primary" />
-            Análise Inteligente de Dados
+            Análise Inteligente com Gemini AI
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center space-y-4">
             <p className="text-muted-foreground">
-              Nossa IA irá analisar seus dados, detectar inconsistências e sugerir melhorias
+              A IA Gemini irá analisar, tratar e limpar seus dados, detectando inconsistências e gerando insights valiosos
             </p>
             <Button 
               onClick={analyzeData}
@@ -103,12 +73,12 @@ export const DataAnalysis: React.FC<DataAnalysisProps> = ({ data, onAnalysisComp
               {isAnalyzing ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Analisando com IA...
+                  Processando com Gemini AI...
                 </>
               ) : (
                 <>
                   <Brain className="w-4 h-4 mr-2" />
-                  Iniciar Análise
+                  Iniciar Análise Completa
                 </>
               )}
             </Button>
@@ -118,6 +88,24 @@ export const DataAnalysis: React.FC<DataAnalysisProps> = ({ data, onAnalysisComp
 
       {analysis && (
         <div className="grid gap-6 md:grid-cols-2">
+          {summary && (
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-blue-500" />
+                  Resumo Executivo
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="prose prose-sm max-w-none">
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                    {summary}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -145,7 +133,7 @@ export const DataAnalysis: React.FC<DataAnalysisProps> = ({ data, onAnalysisComp
                 <Alert>
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>
-                    {analysis.dataQuality.missingValues} valores ausentes detectados
+                    {analysis.dataQuality.missingValues} valores ausentes detectados e tratados
                   </AlertDescription>
                 </Alert>
               )}
@@ -181,7 +169,7 @@ export const DataAnalysis: React.FC<DataAnalysisProps> = ({ data, onAnalysisComp
 
           <Card className="md:col-span-2">
             <CardHeader>
-              <CardTitle>Sugestões de Melhoria</CardTitle>
+              <CardTitle>Sugestões de Melhoria Aplicadas</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid gap-2">

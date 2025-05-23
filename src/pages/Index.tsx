@@ -3,15 +3,17 @@ import React, { useState } from 'react';
 import { FileUpload } from '@/components/FileUpload';
 import { DataAnalysis } from '@/components/DataAnalysis';
 import { ChartVisualization } from '@/components/ChartVisualization';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Brain, TrendingUp, Upload } from 'lucide-react';
+import { Brain, TrendingUp, Upload, FileText } from 'lucide-react';
 
 const Index = () => {
   const [currentStep, setCurrentStep] = useState<'upload' | 'analysis' | 'visualization'>('upload');
   const [data, setData] = useState<any[]>([]);
   const [analysis, setAnalysis] = useState<any>(null);
   const [cleanedData, setCleanedData] = useState<any[]>([]);
+  const [summary, setSummary] = useState<string>('');
+  const [chartDescriptions, setChartDescriptions] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleDataLoaded = (loadedData: any[], source: 'csv' | 'sheets') => {
@@ -20,10 +22,12 @@ const Index = () => {
     setCurrentStep('analysis');
   };
 
-  const handleAnalysisComplete = (analysisResult: any, processedData: any[]) => {
+  const handleAnalysisComplete = (analysisResult: any, processedData: any[], summaryText: string, descriptions: any) => {
     console.log('Análise concluída:', analysisResult);
     setAnalysis(analysisResult);
     setCleanedData(processedData);
+    setSummary(summaryText);
+    setChartDescriptions(descriptions);
     setCurrentStep('visualization');
   };
 
@@ -57,7 +61,7 @@ const Index = () => {
             DataViz AI
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Transforme seus dados em insights visuais poderosos com a ajuda da inteligência artificial
+            Transforme seus dados em insights visuais poderosos com a ajuda da Gemini AI
           </p>
         </div>
 
@@ -107,9 +111,9 @@ const Index = () => {
                 <Card className="glass-morphism hover:shadow-lg transition-all duration-300">
                   <CardContent className="p-6 text-center">
                     <Brain className="w-12 h-12 text-primary mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">IA Avançada</h3>
+                    <h3 className="text-lg font-semibold mb-2">Gemini AI</h3>
                     <p className="text-sm text-muted-foreground">
-                      Análise inteligente com correção automática de inconsistências
+                      Análise inteligente com tratamento e correção automática dos dados
                     </p>
                   </CardContent>
                 </Card>
@@ -119,7 +123,7 @@ const Index = () => {
                     <TrendingUp className="w-12 h-12 text-primary mx-auto mb-4" />
                     <h3 className="text-lg font-semibold mb-2">Visualizações</h3>
                     <p className="text-sm text-muted-foreground">
-                      Gráficos interativos e responsivos para todos os dispositivos
+                      Gráficos interativos com descrições personalizadas da IA
                     </p>
                   </CardContent>
                 </Card>
@@ -136,15 +140,34 @@ const Index = () => {
 
           {currentStep === 'visualization' && analysis && cleanedData.length > 0 && (
             <div className="space-y-8">
+              {summary && (
+                <Card className="glass-morphism">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-blue-500" />
+                      Resumo Executivo da Análise
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="prose prose-sm max-w-none">
+                      <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                        {summary}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <ChartVisualization 
                 data={cleanedData}
                 analysis={analysis}
+                chartDescriptions={chartDescriptions}
               />
               
               {/* Summary Card */}
               <Card className="glass-morphism">
                 <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">Resumo da Análise</h3>
+                  <h3 className="text-lg font-semibold mb-4">Estatísticas da Análise</h3>
                   <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="text-center p-4 bg-muted rounded-lg">
                       <div className="text-2xl font-bold text-primary">

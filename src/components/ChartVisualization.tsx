@@ -4,24 +4,32 @@ import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Cart
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ChartBar, ChartLine, ChartPie } from 'lucide-react';
+import { ChartBar, ChartLine, ChartPie, Brain } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ChartVisualizationProps {
   data: any[];
   analysis: any;
+  chartDescriptions?: {
+    bar: string;
+    line: string;
+    pie: string;
+  };
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
-export const ChartVisualization: React.FC<ChartVisualizationProps> = ({ data, analysis }) => {
+export const ChartVisualization: React.FC<ChartVisualizationProps> = ({ 
+  data, 
+  analysis, 
+  chartDescriptions 
+}) => {
   const [activeChart, setActiveChart] = useState('bar');
 
   // Preparar dados para visualização
   const prepareChartData = () => {
     if (!data || data.length === 0) return [];
     
-    // Exemplo de preparação de dados - em uma implementação real,
-    // isso seria baseado na análise da IA
     const keys = Object.keys(data[0]);
     const numericKey = keys.find(key => 
       data.every(item => !isNaN(Number(item[key])) && item[key] !== '')
@@ -129,11 +137,29 @@ export const ChartVisualization: React.FC<ChartVisualizationProps> = ({ data, an
     </ResponsiveContainer>
   );
 
+  const getChartDescription = (type: string) => {
+    if (chartDescriptions && chartDescriptions[type as keyof typeof chartDescriptions]) {
+      return chartDescriptions[type as keyof typeof chartDescriptions];
+    }
+    
+    // Fallback descriptions
+    switch (type) {
+      case 'bar':
+        return 'Ideal para comparar valores entre diferentes categorias';
+      case 'line':
+        return 'Perfeito para mostrar tendências e mudanças ao longo do tempo';
+      case 'pie':
+        return 'Excelente para mostrar a proporção de cada categoria no total';
+      default:
+        return 'Visualização dos dados processados';
+    }
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>Visualização dos Dados</span>
+          <span>Visualização dos Dados Tratados</span>
           <div className="flex gap-2">
             {analysis?.recommendedCharts?.map((chart: any, index: number) => (
               <Badge key={index} variant="secondary">
@@ -162,30 +188,81 @@ export const ChartVisualization: React.FC<ChartVisualizationProps> = ({ data, an
 
           <TabsContent value="bar" className="mt-6">
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Gráfico de Barras</h3>
-              <p className="text-sm text-muted-foreground">
-                Ideal para comparar valores entre diferentes categorias
-              </p>
+              <div className="flex items-start gap-3">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold">Gráfico de Barras</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {getChartDescription('bar')}
+                  </p>
+                </div>
+                {chartDescriptions && (
+                  <Brain className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
+                )}
+              </div>
+              
+              {chartDescriptions && (
+                <Alert>
+                  <Brain className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Análise da IA:</strong> {chartDescriptions.bar}
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               {renderBarChart()}
             </div>
           </TabsContent>
 
           <TabsContent value="line" className="mt-6">
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Gráfico de Linhas</h3>
-              <p className="text-sm text-muted-foreground">
-                Perfeito para mostrar tendências e mudanças ao longo do tempo
-              </p>
+              <div className="flex items-start gap-3">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold">Gráfico de Linhas</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {getChartDescription('line')}
+                  </p>
+                </div>
+                {chartDescriptions && (
+                  <Brain className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
+                )}
+              </div>
+              
+              {chartDescriptions && (
+                <Alert>
+                  <Brain className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Análise da IA:</strong> {chartDescriptions.line}
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               {renderLineChart()}
             </div>
           </TabsContent>
 
           <TabsContent value="pie" className="mt-6">
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Gráfico de Pizza</h3>
-              <p className="text-sm text-muted-foreground">
-                Excelente para mostrar a proporção de cada categoria no total
-              </p>
+              <div className="flex items-start gap-3">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold">Gráfico de Pizza</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {getChartDescription('pie')}
+                  </p>
+                </div>
+                {chartDescriptions && (
+                  <Brain className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
+                )}
+              </div>
+              
+              {chartDescriptions && (
+                <Alert>
+                  <Brain className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Análise da IA:</strong> {chartDescriptions.pie}
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               {renderPieChart()}
             </div>
           </TabsContent>
