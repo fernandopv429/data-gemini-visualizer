@@ -4,7 +4,7 @@ import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Cart
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ChartBar, ChartLine, ChartPie, Brain, Scatter3D } from 'lucide-react';
+import { ChartBar, ChartLine, ChartPie, Brain, Scatter as ScatterIcon } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ChartVisualizationProps {
@@ -27,13 +27,12 @@ export const ChartVisualization: React.FC<ChartVisualizationProps> = ({
 }) => {
   const [activeChart, setActiveChart] = useState('bar');
 
-  // Usar os dados exatos processados pela IA
+  // Usar apenas os dados processados pela IA
   const { barData, lineData, pieData, scatterData, availableCharts } = useMemo(() => {
-    if (!data || data.length === 0 || !analysis?.chartData) {
+    if (!analysis?.chartData) {
       return { barData: [], lineData: [], pieData: [], scatterData: [], availableCharts: ['bar'] };
     }
     
-    // Usar os dados processados pela IA Gemini
     const chartData = analysis.chartData;
     
     return {
@@ -43,7 +42,7 @@ export const ChartVisualization: React.FC<ChartVisualizationProps> = ({
       scatterData: chartData.scatter || [],
       availableCharts: Object.keys(chartData).filter(key => chartData[key] && chartData[key].length > 0)
     };
-  }, [data, analysis]);
+  }, [analysis]);
 
   const renderBarChart = () => (
     <ResponsiveContainer width="100%" height={400}>
@@ -57,13 +56,7 @@ export const ChartVisualization: React.FC<ChartVisualizationProps> = ({
           interval={0}
         />
         <YAxis />
-        <Tooltip 
-          contentStyle={{ 
-            backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-            border: '1px solid #ccc',
-            borderRadius: '8px'
-          }} 
-        />
+        <Tooltip />
         <Bar dataKey="value" fill="#667eea" radius={[4, 4, 0, 0]}>
           {barData.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -77,21 +70,9 @@ export const ChartVisualization: React.FC<ChartVisualizationProps> = ({
     <ResponsiveContainer width="100%" height={400}>
       <LineChart data={lineData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis 
-          dataKey="name" 
-          angle={-45}
-          textAnchor="end"
-          height={80}
-          interval={0}
-        />
+        <XAxis dataKey="name" />
         <YAxis />
-        <Tooltip 
-          contentStyle={{ 
-            backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-            border: '1px solid #ccc',
-            borderRadius: '8px'
-          }} 
-        />
+        <Tooltip />
         <Line 
           type="monotone" 
           dataKey="value" 
@@ -120,13 +101,7 @@ export const ChartVisualization: React.FC<ChartVisualizationProps> = ({
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>
-        <Tooltip 
-          contentStyle={{ 
-            backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-            border: '1px solid #ccc',
-            borderRadius: '8px'
-          }} 
-        />
+        <Tooltip />
       </PieChart>
     </ResponsiveContainer>
   );
@@ -137,14 +112,7 @@ export const ChartVisualization: React.FC<ChartVisualizationProps> = ({
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="x" type="number" />
         <YAxis dataKey="y" type="number" />
-        <Tooltip 
-          contentStyle={{ 
-            backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-            border: '1px solid #ccc',
-            borderRadius: '8px'
-          }}
-          formatter={(value, name) => [value, name === 'x' ? 'Valor X' : 'Valor Y']}
-        />
+        <Tooltip formatter={(value, name) => [value, name === 'x' ? 'Valor X' : 'Valor Y']} />
         <Scatter dataKey="y" fill="#8884d8">
           {scatterData.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -154,187 +122,109 @@ export const ChartVisualization: React.FC<ChartVisualizationProps> = ({
     </ResponsiveContainer>
   );
 
-  const getDataSummary = (type: string) => {
-    switch (type) {
-      case 'bar':
-        return `${barData.length} categorias`;
-      case 'line':
-        return `${lineData.length} pontos`;
-      case 'pie':
-        return `${pieData.length} segmentos`;
-      case 'scatter':
-        return `${scatterData.length} pontos`;
-      default:
-        return '';
-    }
-  };
-
   return (
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>Relatório Completo de Visualização</span>
-          <div className="flex gap-2">
-            <Badge variant="outline">{data.length} registros processados</Badge>
-            <Badge variant="secondary">
-              <Brain className="w-3 h-3 mr-1" />
-              Análise IA
-            </Badge>
-          </div>
+          <span>Relatório de Análise - Gemini AI</span>
+          <Badge variant="secondary">
+            <Brain className="w-3 h-3 mr-1" />
+            IA Gemini
+          </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent>
         <Tabs value={activeChart} onValueChange={setActiveChart}>
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="bar" className="flex items-center gap-2" disabled={!availableCharts.includes('bar')}>
-              <ChartBar className="w-4 h-4" />
+            <TabsTrigger value="bar" disabled={!availableCharts.includes('bar')}>
+              <ChartBar className="w-4 h-4 mr-2" />
               Barras
             </TabsTrigger>
-            <TabsTrigger value="line" className="flex items-center gap-2" disabled={!availableCharts.includes('line')}>
-              <ChartLine className="w-4 h-4" />
+            <TabsTrigger value="line" disabled={!availableCharts.includes('line')}>
+              <ChartLine className="w-4 h-4 mr-2" />
               Linhas
             </TabsTrigger>
-            <TabsTrigger value="pie" className="flex items-center gap-2" disabled={!availableCharts.includes('pie')}>
-              <ChartPie className="w-4 h-4" />
+            <TabsTrigger value="pie" disabled={!availableCharts.includes('pie')}>
+              <ChartPie className="w-4 h-4 mr-2" />
               Pizza
             </TabsTrigger>
-            <TabsTrigger value="scatter" className="flex items-center gap-2" disabled={!availableCharts.includes('scatter')}>
-              <Scatter3D className="w-4 h-4" />
+            <TabsTrigger value="scatter" disabled={!availableCharts.includes('scatter')}>
+              <ScatterIcon className="w-4 h-4 mr-2" />
               Dispersão
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="bar" className="mt-6">
-            <div className="space-y-6">
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg">
-                <h3 className="text-xl font-bold mb-3 flex items-center gap-2">
-                  <ChartBar className="w-5 h-5 text-blue-600" />
-                  Análise de Gráfico de Barras
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {getDataSummary('bar')} analisadas pela IA Gemini
-                </p>
-                
-                {chartDescriptions?.bar && (
-                  <Alert className="mb-4">
-                    <Brain className="h-4 w-4" />
-                    <AlertDescription>
-                      <div className="space-y-2">
-                        <strong>Relatório da IA:</strong>
-                        <div className="prose prose-sm max-w-none">
-                          <p className="whitespace-pre-line">{chartDescriptions.bar}</p>
-                        </div>
-                      </div>
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-              
+            <div className="space-y-4">
+              {chartDescriptions?.bar && (
+                <Alert>
+                  <Brain className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Análise da IA:</strong>
+                    <p className="mt-2 whitespace-pre-line">{chartDescriptions.bar}</p>
+                  </AlertDescription>
+                </Alert>
+              )}
               {barData.length > 0 ? renderBarChart() : (
                 <div className="text-center py-8 text-muted-foreground">
-                  A IA não identificou dados adequados para gráfico de barras
+                  Nenhum dado disponível para gráfico de barras
                 </div>
               )}
             </div>
           </TabsContent>
 
           <TabsContent value="line" className="mt-6">
-            <div className="space-y-6">
-              <div className="bg-gradient-to-r from-green-50 to-blue-50 p-6 rounded-lg">
-                <h3 className="text-xl font-bold mb-3 flex items-center gap-2">
-                  <ChartLine className="w-5 h-5 text-green-600" />
-                  Análise de Gráfico de Linhas
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {getDataSummary('line')} processados pela IA
-                </p>
-                
-                {chartDescriptions?.line && (
-                  <Alert className="mb-4">
-                    <Brain className="h-4 w-4" />
-                    <AlertDescription>
-                      <div className="space-y-2">
-                        <strong>Relatório da IA:</strong>
-                        <div className="prose prose-sm max-w-none">
-                          <p className="whitespace-pre-line">{chartDescriptions.line}</p>
-                        </div>
-                      </div>
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-              
+            <div className="space-y-4">
+              {chartDescriptions?.line && (
+                <Alert>
+                  <Brain className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Análise da IA:</strong>
+                    <p className="mt-2 whitespace-pre-line">{chartDescriptions.line}</p>
+                  </AlertDescription>
+                </Alert>
+              )}
               {lineData.length > 0 ? renderLineChart() : (
                 <div className="text-center py-8 text-muted-foreground">
-                  A IA não identificou dados adequados para gráfico de linhas
+                  Nenhum dado disponível para gráfico de linhas
                 </div>
               )}
             </div>
           </TabsContent>
 
           <TabsContent value="pie" className="mt-6">
-            <div className="space-y-6">
-              <div className="bg-gradient-to-r from-orange-50 to-red-50 p-6 rounded-lg">
-                <h3 className="text-xl font-bold mb-3 flex items-center gap-2">
-                  <ChartPie className="w-5 h-5 text-orange-600" />
-                  Análise de Gráfico de Pizza
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {getDataSummary('pie')} categorizados pela IA
-                </p>
-                
-                {chartDescriptions?.pie && (
-                  <Alert className="mb-4">
-                    <Brain className="h-4 w-4" />
-                    <AlertDescription>
-                      <div className="space-y-2">
-                        <strong>Relatório da IA:</strong>
-                        <div className="prose prose-sm max-w-none">
-                          <p className="whitespace-pre-line">{chartDescriptions.pie}</p>
-                        </div>
-                      </div>
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-              
+            <div className="space-y-4">
+              {chartDescriptions?.pie && (
+                <Alert>
+                  <Brain className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Análise da IA:</strong>
+                    <p className="mt-2 whitespace-pre-line">{chartDescriptions.pie}</p>
+                  </AlertDescription>
+                </Alert>
+              )}
               {pieData.length > 0 ? renderPieChart() : (
                 <div className="text-center py-8 text-muted-foreground">
-                  A IA não identificou dados adequados para gráfico de pizza
+                  Nenhum dado disponível para gráfico de pizza
                 </div>
               )}
             </div>
           </TabsContent>
 
           <TabsContent value="scatter" className="mt-6">
-            <div className="space-y-6">
-              <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-lg">
-                <h3 className="text-xl font-bold mb-3 flex items-center gap-2">
-                  <Scatter3D className="w-5 h-5 text-purple-600" />
-                  Análise de Gráfico de Dispersão
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {getDataSummary('scatter')} correlacionados pela IA
-                </p>
-                
-                {chartDescriptions?.scatter && (
-                  <Alert className="mb-4">
-                    <Brain className="h-4 w-4" />
-                    <AlertDescription>
-                      <div className="space-y-2">
-                        <strong>Relatório da IA:</strong>
-                        <div className="prose prose-sm max-w-none">
-                          <p className="whitespace-pre-line">{chartDescriptions.scatter}</p>
-                        </div>
-                      </div>
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-              
+            <div className="space-y-4">
+              {chartDescriptions?.scatter && (
+                <Alert>
+                  <Brain className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Análise da IA:</strong>
+                    <p className="mt-2 whitespace-pre-line">{chartDescriptions.scatter}</p>
+                  </AlertDescription>
+                </Alert>
+              )}
               {scatterData.length > 0 ? renderScatterChart() : (
                 <div className="text-center py-8 text-muted-foreground">
-                  A IA não identificou dados adequados para gráfico de dispersão
+                  Nenhum dado disponível para gráfico de dispersão
                 </div>
               )}
             </div>
