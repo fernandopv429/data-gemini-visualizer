@@ -1,4 +1,3 @@
-
 /**
  * Utilitários para processamento e manipulação de dados
  * Este módulo contém funções para limpeza e transformação de dados
@@ -18,13 +17,28 @@ export interface ChartRecommendation {
 }
 
 export interface DataAnalysis {
-  dataQuality: DataQuality;
+  dataQuality: {
+    totalRows: number;
+    duplicates: number;
+    missingValues: number;
+    inconsistencies: number;
+  };
   suggestions: string[];
-  recommendedCharts: ChartRecommendation[];
+  recommendedCharts: Array<{
+    type: string;
+    reason: string;
+    confidence: number;
+  }>;
   dataTypes: {
     numeric: string[];
     categorical: string[];
     temporal: string[];
+  };
+  chartData?: {
+    bar: Array<{ name: string; value: number }>;
+    line: Array<{ name: string; value: number }>;
+    pie: Array<{ name: string; value: number }>;
+    scatter: Array<{ x: number; y: number; name: string }>;
   };
 }
 

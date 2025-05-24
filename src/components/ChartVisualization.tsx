@@ -4,7 +4,7 @@ import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Cart
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ChartBar, ChartLine, ChartPie, Brain, Scatter } from 'lucide-react';
+import { ChartBar, ChartLine, ChartPie, Brain, Scatter3D } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ChartVisualizationProps {
@@ -199,7 +199,7 @@ export const ChartVisualization: React.FC<ChartVisualizationProps> = ({
               Pizza
             </TabsTrigger>
             <TabsTrigger value="scatter" className="flex items-center gap-2" disabled={!availableCharts.includes('scatter')}>
-              <Scatter className="w-4 h-4" />
+              <Scatter3D className="w-4 h-4" />
               Dispersão
             </TabsTrigger>
           </TabsList>
@@ -310,7 +310,7 @@ export const ChartVisualization: React.FC<ChartVisualizationProps> = ({
             <div className="space-y-6">
               <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-lg">
                 <h3 className="text-xl font-bold mb-3 flex items-center gap-2">
-                  <Scatter className="w-5 h-5 text-purple-600" />
+                  <Scatter3D className="w-5 h-5 text-purple-600" />
                   Análise de Gráfico de Dispersão
                 </h3>
                 <p className="text-sm text-muted-foreground mb-4">
