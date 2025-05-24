@@ -32,6 +32,7 @@ interface ProcessedDataResponse {
     bar: string;
     line: string;
     pie: string;
+    scatter?: string;
   };
 }
 
@@ -44,7 +45,7 @@ export const analyzeAndCleanDataWithGemini = async (data: any[], apiKey: string)
   }
 
   try {
-    console.log('Iniciando análise e tratamento dos dados com Gemini...');
+    console.log('Iniciando análise completa dos dados com Gemini...');
     console.log('Amostra dos dados originais:', data.slice(0, 3));
     console.log('Colunas disponíveis:', Object.keys(data[0] || {}));
     
@@ -56,11 +57,15 @@ export const analyzeAndCleanDataWithGemini = async (data: any[], apiKey: string)
     const analysis = await analyzeDataWithGemini(cleanedData, apiKey);
     console.log('Análise completa:', analysis);
     
+    // Gera os dados específicos para cada gráfico
+    const chartData = await generateChartData(cleanedData, analysis, apiKey);
+    analysis.chartData = chartData;
+    
     // Gera resumo geral
     const summary = await generateSummaryWithGemini(cleanedData, analysis, apiKey);
     
-    // Gera descrições para os gráficos com base nos dados reais
-    const chartDescriptions = await generateChartDescriptions(cleanedData, analysis, apiKey);
+    // Gera relatórios detalhados para cada gráfico
+    const chartDescriptions = await generateDetailedChartReports(cleanedData, chartData, apiKey);
     
     return {
       cleanedData,
@@ -76,8 +81,204 @@ export const analyzeAndCleanDataWithGemini = async (data: any[], apiKey: string)
 };
 
 /**
- * Limpa e trata os dados usando a API Gemini
+ * Gera dados específicos para cada tipo de gráfico
  */
+const generateChartData = async (data: any[], analysis: DataAnalysis, apiKey: string): Promise<any> => {
+  const prompt = createChartDataPrompt(data, analysis);
+  
+  const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      contents: [{
+        parts: [{
+          text: prompt
+        }]
+      }]
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Erro na API Gemini para dados dos gráficos:', response.status, errorText);
+    throw new Error(`Erro na API Gemini: ${response.status} ${response.statusText}`);
+  }
+
+  const result: GeminiResponse = await response.json();
+  const chartDataText = result.candidates[0]?.content?.parts[0]?.text;
+  
+  if (!chartDataText) {
+    throw new Error('Resposta inválida da API Gemini para dados dos gráficos');
+  }
+
+  try {
+    const jsonText = chartDataText.replace(/```json\n?|\n?```/g, '').trim();
+    return JSON.parse(jsonText);
+  } catch (error) {
+    console.warn('Erro ao parse dos dados dos gráficos, usando fallback');
+    return generateFallbackChartData(data, analysis);
+  }
+};
+
+/**
+ * Gera relatórios detalhados para cada gráfico
+ */
+const generateDetailedChartReports = async (data: any[], chartData: any, apiKey: string): Promise<{bar: string, line: string, pie: string, scatter?: string}> => {
+  const prompt = createDetailedChartReportsPrompt(data, chartData);
+
+  const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      contents: [{
+        parts: [{
+          text: prompt
+        }]
+      }]
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Erro na API Gemini para relatórios:', response.status, errorText);
+    throw new Error(`Erro na API Gemini para relatórios: ${response.status} ${response.statusText}`);
+  }
+
+  const result: GeminiResponse = await response.json();
+  const reportsText = result.candidates[0]?.content?.parts[0]?.text;
+  
+  try {
+    const jsonText = reportsText?.replace(/```json\n?|\n?```/g, '').trim() || '{}';
+    return JSON.parse(jsonText);
+  } catch (error) {
+    return generateFallbackReports(chartData);
+  }
+};
+
+/**
+ * Cria prompt para gerar dados específicos dos gráficos
+ */
+const createChartDataPrompt = (data: any[], analysis: DataAnalysis): string => {
+  const { numeric, categorical, temporal } = analysis.dataTypes;
+  const sampleData = data.slice(0, 10);
+  
+  return `
+Analise os dados REAIS fornecidos e gere dados específicos e otimizados para cada tipo de gráfico.
+
+Dados completos (amostra): ${JSON.stringify(sampleData, null, 2)}
+Total de registros: ${data.length}
+Colunas numéricas: ${numeric.join(', ')}
+Colunas categóricas: ${categorical.join(', ')}
+Colunas temporais: ${temporal.join(', ')}
+
+Com base nos dados REAIS, processe e retorne um JSON com dados específicos para cada gráfico:
+
+{
+  "bar": [
+    {"name": "categoria1", "value": 100},
+    {"name": "categoria2", "value": 150}
+  ],
+  "line": [
+    {"name": "periodo1", "value": 100},
+    {"name": "periodo2", "value": 120}
+  ],
+  "pie": [
+    {"name": "segmento1", "value": 30},
+    {"name": "segmento2", "value": 45}
+  ],
+  "scatter": [
+    {"x": 10, "y": 20, "name": "ponto1"},
+    {"x": 15, "y": 25, "name": "ponto2"}
+  ]
+}
+
+INSTRUÇÕES ESPECÍFICAS:
+1. Para BAR: Agrupe por categorias mais relevantes, mostre até 10 categorias principais
+2. Para LINE: Use dados temporais se disponível, senão use sequência lógica
+3. Para PIE: Mostre distribuição proporcional, máximo 8 segmentos
+4. Para SCATTER: Use 2 colunas numéricas mais correlacionadas
+
+IMPORTANTE: Use os dados REAIS fornecidos, não invente valores. Se não há dados suficientes para um tipo de gráfico, retorne array vazio [].
+
+Retorne APENAS o JSON, sem formatação markdown.
+`;
+};
+
+/**
+ * Cria prompt para relatórios detalhados dos gráficos
+ */
+const createDetailedChartReportsPrompt = (data: any[], chartData: any): string => {
+  return `
+Com base nos dados processados e nos gráficos gerados, crie relatórios detalhados e insights específicos para cada tipo de visualização.
+
+Dados originais (amostra): ${JSON.stringify(data.slice(0, 5), null, 2)}
+Dados dos gráficos: ${JSON.stringify(chartData, null, 2)}
+
+Crie relatórios detalhados em português brasileiro:
+
+{
+  "bar": "Relatório detalhado do gráfico de barras: [análise específica dos dados, principais insights, comparações entre categorias, valores destacados, tendências identificadas - mínimo 3 parágrafos]",
+  "line": "Relatório detalhado do gráfico de linhas: [análise temporal ou sequencial, tendências identificadas, pontos de inflexão, crescimento/declínio, projeções - mínimo 3 parágrafos]",
+  "pie": "Relatório detalhado do gráfico de pizza: [análise de distribuição, segmentos dominantes, proporções significativas, interpretação dos percentuais - mínimo 3 parágrafos]",
+  "scatter": "Relatório detalhado do gráfico de dispersão: [análise de correlação, padrões identificados, outliers, relação entre variáveis, insights estatísticos - mínimo 3 parágrafos]"
+}
+
+Cada relatório deve:
+- Ser específico para os dados analisados
+- Incluir insights acionáveis
+- Mencionar números e valores específicos
+- Identificar padrões e tendências
+- Sugerir implicações práticas
+
+Retorne APENAS o JSON, sem formatação markdown.
+`;
+};
+
+/**
+ * Gera dados de fallback para gráficos
+ */
+const generateFallbackChartData = (data: any[], analysis: DataAnalysis) => {
+  const { numeric, categorical, temporal } = analysis.dataTypes;
+  const result: any = { bar: [], line: [], pie: [], scatter: [] };
+  
+  // Gráfico de barras
+  if (categorical.length > 0 && numeric.length > 0) {
+    const categoryCol = categorical[0];
+    const valueCol = numeric[0];
+    
+    const grouped = data.reduce((acc, item) => {
+      const category = String(item[categoryCol] || 'Outros');
+      const value = Number(item[valueCol]) || 0;
+      acc[category] = (acc[category] || 0) + value;
+      return acc;
+    }, {});
+
+    result.bar = Object.entries(grouped)
+      .map(([name, value]) => ({ name, value: value as number }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10);
+  }
+  
+  // Outros gráficos seguem lógica similar...
+  return result;
+};
+
+/**
+ * Gera relatórios de fallback
+ */
+const generateFallbackReports = (chartData: any) => {
+  return {
+    bar: 'Gráfico de barras mostrando a distribuição dos dados por categorias principais.',
+    line: 'Gráfico de linhas apresentando a evolução temporal dos valores.',
+    pie: 'Gráfico de pizza demonstrando a proporção entre diferentes segmentos.',
+    scatter: 'Gráfico de dispersão revelando correlações entre variáveis numéricas.'
+  };
+};
+
 const cleanDataWithGemini = async (data: any[], apiKey: string): Promise<any[]> => {
   const prompt = createDataCleaningPrompt(data);
   
@@ -109,7 +310,6 @@ const cleanDataWithGemini = async (data: any[], apiKey: string): Promise<any[]> 
   }
 
   try {
-    // Remove markdown formatting if present
     const jsonText = cleanedDataText.replace(/```json\n?|\n?```/g, '').trim();
     return JSON.parse(jsonText);
   } catch (error) {
@@ -118,9 +318,6 @@ const cleanDataWithGemini = async (data: any[], apiKey: string): Promise<any[]> 
   }
 };
 
-/**
- * Analisa dados usando a API Gemini com mais detalhes
- */
 const analyzeDataWithGemini = async (data: any[], apiKey: string): Promise<DataAnalysis> => {
   const prompt = createDetailedAnalysisPrompt(data);
   
@@ -152,27 +349,20 @@ const analyzeDataWithGemini = async (data: any[], apiKey: string): Promise<DataA
   }
 
   try {
-    // Remove markdown formatting if present
     const jsonText = analysisText.replace(/```json\n?|\n?```/g, '').trim();
     const analysis = JSON.parse(jsonText);
     
-    // Validar e corrigir tipos de dados detectados
     const validatedAnalysis = validateAndEnhanceAnalysis(analysis, data);
     return validatedAnalysis;
   } catch (error) {
     console.error('Erro ao fazer parse da análise:', error);
-    // Retorna uma análise baseada em detecção automática
     return performAutomaticAnalysis(data);
   }
 };
 
-/**
- * Valida e melhora a análise da IA
- */
 const validateAndEnhanceAnalysis = (analysis: any, data: any[]): DataAnalysis => {
   const keys = Object.keys(data[0] || {});
   
-  // Detectar tipos automaticamente para validação
   const autoDetectedTypes = {
     numeric: keys.filter(key => 
       data.every(item => !isNaN(Number(item[key])) && item[key] !== '' && item[key] !== null)
@@ -186,7 +376,6 @@ const validateAndEnhanceAnalysis = (analysis: any, data: any[]): DataAnalysis =>
     )
   };
 
-  // Mesclar com a análise da IA, priorizando detecção automática
   return {
     dataQuality: {
       totalRows: data.length,
@@ -204,9 +393,6 @@ const validateAndEnhanceAnalysis = (analysis: any, data: any[]): DataAnalysis =>
   };
 };
 
-/**
- * Análise automática quando a IA falha
- */
 const performAutomaticAnalysis = (data: any[]): DataAnalysis => {
   const keys = Object.keys(data[0] || {});
   
@@ -238,9 +424,6 @@ const performAutomaticAnalysis = (data: any[]): DataAnalysis => {
   };
 };
 
-/**
- * Gera recomendações melhoradas de gráficos
- */
 const generateEnhancedChartRecommendations = (dataTypes: any, data: any[]) => {
   const recommendations = [];
   
@@ -279,9 +462,6 @@ const generateEnhancedChartRecommendations = (dataTypes: any, data: any[]) => {
   return recommendations;
 };
 
-/**
- * Conta valores ausentes
- */
 const countMissingValues = (data: any[]): number => {
   let missing = 0;
   data.forEach(row => {
@@ -294,9 +474,6 @@ const countMissingValues = (data: any[]): number => {
   return missing;
 };
 
-/**
- * Gera resumo geral dos dados
- */
 const generateSummaryWithGemini = async (data: any[], analysis: DataAnalysis, apiKey: string): Promise<string> => {
   const prompt = `
 Baseado nos seguintes dados analisados, crie um resumo executivo em português:
@@ -339,65 +516,6 @@ Retorne apenas o texto do resumo, sem formatação JSON ou markdown.
   return result.candidates[0]?.content?.parts[0]?.text || 'Resumo não disponível';
 };
 
-/**
- * Gera descrições para os gráficos com mais contexto
- */
-const generateChartDescriptions = async (data: any[], analysis: DataAnalysis, apiKey: string): Promise<{bar: string, line: string, pie: string}> => {
-  const prompt = createChartDescriptionPrompt(data, analysis);
-
-  const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      contents: [{
-        parts: [{
-          text: prompt
-        }]
-      }]
-    })
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Erro na API Gemini para descrições:', response.status, errorText);
-    throw new Error(`Erro na API Gemini para descrições: ${response.status} ${response.statusText}`);
-  }
-
-  const result: GeminiResponse = await response.json();
-  const descriptionsText = result.candidates[0]?.content?.parts[0]?.text;
-  
-  try {
-    const jsonText = descriptionsText?.replace(/```json\n?|\n?```/g, '').trim() || '{}';
-    return JSON.parse(jsonText);
-  } catch (error) {
-    return generateFallbackDescriptions(analysis);
-  }
-};
-
-/**
- * Gera descrições padrão baseadas na análise
- */
-const generateFallbackDescriptions = (analysis: DataAnalysis) => {
-  const { numeric, categorical, temporal } = analysis.dataTypes;
-  
-  return {
-    bar: categorical.length > 0 && numeric.length > 0 
-      ? `Comparação de ${numeric[0]} entre diferentes ${categorical[0]}`
-      : 'Gráfico de barras mostrando comparação entre categorias',
-    line: temporal.length > 0 && numeric.length > 0
-      ? `Tendência de ${numeric[0]} ao longo de ${temporal[0]}`
-      : 'Gráfico de linhas mostrando evolução dos dados',
-    pie: categorical.length > 0
-      ? `Distribuição proporcional de ${categorical[0]}`
-      : 'Gráfico de pizza mostrando distribuição proporcional'
-  };
-};
-
-/**
- * Cria prompt para limpeza de dados
- */
 const createDataCleaningPrompt = (data: any[]): string => {
   const sampleData = data.slice(0, 10);
   const columns = Object.keys(data[0] || {});
@@ -421,14 +539,10 @@ Retorne APENAS um array JSON com os dados limpos, sem texto adicional ou formata
 `;
 };
 
-/**
- * Cria prompt detalhado para análise de dados
- */
 const createDetailedAnalysisPrompt = (data: any[]): string => {
   const sampleData = data.slice(0, 10);
   const columns = Object.keys(data[0] || {});
   
-  // Analisar tipos automaticamente para dar contexto à IA
   const numericHints = columns.filter(col => 
     data.slice(0, 5).every(row => !isNaN(Number(row[col])) && row[col] !== '')
   );
@@ -476,32 +590,6 @@ Retorne um JSON com a seguinte estrutura EXATA:
 }
 
 Analise CUIDADOSAMENTE cada coluna dos dados fornecidos para classificá-las corretamente.
-Retorne APENAS o JSON, sem formatação markdown.
-`;
-};
-
-/**
- * Cria prompt para descrições de gráficos baseado nos dados reais
- */
-const createChartDescriptionPrompt = (data: any[], analysis: DataAnalysis): string => {
-  const { numeric, categorical, temporal } = analysis.dataTypes;
-  
-  return `
-Baseado nos dados REAIS fornecidos, crie descrições específicas para cada tipo de gráfico:
-
-Dados (amostra): ${JSON.stringify(data.slice(0, 5), null, 2)}
-Colunas numéricas: ${numeric.join(', ')}
-Colunas categóricas: ${categorical.join(', ')}
-Colunas temporais: ${temporal.join(', ')}
-
-Com base nos dados REAIS, retorne um JSON com descrições específicas:
-{
-  "bar": "descrição específica para gráfico de barras usando ${categorical[0] || 'categorias'} vs ${numeric[0] || 'valores'}",
-  "line": "descrição específica para gráfico de linhas usando ${temporal[0] || numeric[0] || 'dados'} vs ${numeric[0] || 'valores'}", 
-  "pie": "descrição específica para gráfico de pizza mostrando distribuição de ${categorical[0] || 'categorias'}"
-}
-
-As descrições devem explicar exatamente o que cada gráfico mostra com ESTES dados específicos.
 Retorne APENAS o JSON, sem formatação markdown.
 `;
 };
