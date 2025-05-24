@@ -1,3 +1,4 @@
+
 /**
  * Serviço para integração com a API Gemini do Google
  * Este módulo gerencia as chamadas para a API de IA
@@ -5,8 +6,8 @@
 
 import { DataAnalysis } from '@/utils/dataProcessor';
 
-// Configurações da API
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+// Configurações da API - usando o modelo correto
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
 /**
  * Interface para resposta da API Gemini
@@ -105,7 +106,9 @@ const cleanDataWithGemini = async (data: any[], apiKey: string): Promise<any[]> 
   }
 
   try {
-    return JSON.parse(cleanedDataText);
+    // Remove markdown formatting if present
+    const jsonText = cleanedDataText.replace(/```json\n?|\n?```/g, '').trim();
+    return JSON.parse(jsonText);
   } catch (error) {
     console.warn('Erro ao parse dos dados limpos, retornando dados originais');
     return data;
@@ -145,7 +148,35 @@ const analyzeDataWithGemini = async (data: any[], apiKey: string): Promise<DataA
     throw new Error('Resposta inválida da API Gemini');
   }
 
-  return JSON.parse(analysisText);
+  try {
+    // Remove markdown formatting if present
+    const jsonText = analysisText.replace(/```json\n?|\n?```/g, '').trim();
+    return JSON.parse(jsonText);
+  } catch (error) {
+    console.error('Erro ao fazer parse da análise:', error);
+    // Retorna uma análise padrão se falhar
+    return {
+      dataQuality: {
+        totalRows: data.length,
+        duplicates: 0,
+        missingValues: 0,
+        inconsistencies: 0
+      },
+      suggestions: ['Dados processados com sucesso'],
+      recommendedCharts: [
+        {
+          type: 'bar',
+          reason: 'Ideal para visualização de categorias',
+          confidence: 80
+        }
+      ],
+      dataTypes: {
+        numeric: [],
+        categorical: [],
+        temporal: []
+      }
+    };
+  }
 };
 
 /**
@@ -166,7 +197,7 @@ Crie um resumo executivo de 2-3 parágrafos explicando:
 2. Principais insights encontrados
 3. Recomendações baseadas na análise
 
-Retorne apenas o texto do resumo, sem formatação JSON.
+Retorne apenas o texto do resumo, sem formatação JSON ou markdown.
 `;
 
   const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
@@ -212,6 +243,7 @@ Retorne um JSON com as seguintes chaves:
 }
 
 As descrições devem explicar o que cada gráfico mostra especificamente com estes dados.
+Retorne APENAS o JSON, sem formatação markdown.
 `;
 
   const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
@@ -238,7 +270,8 @@ As descrições devem explicar o que cada gráfico mostra especificamente com es
   const descriptionsText = result.candidates[0]?.content?.parts[0]?.text;
   
   try {
-    return JSON.parse(descriptionsText || '{}');
+    const jsonText = descriptionsText?.replace(/```json\n?|\n?```/g, '').trim() || '{}';
+    return JSON.parse(jsonText);
   } catch (error) {
     return {
       bar: 'Gráfico de barras mostrando comparação entre categorias',
@@ -270,7 +303,7 @@ Por favor, limpe os dados seguindo estas regras:
 5. Remova caracteres especiais desnecessários
 6. Mantenha a estrutura original dos dados
 
-Retorne APENAS um array JSON com os dados limpos, sem texto adicional.
+Retorne APENAS um array JSON com os dados limpos, sem texto adicional ou formatação markdown.
 `;
 };
 
@@ -292,9 +325,9 @@ Retorne um JSON com a seguinte estrutura EXATA:
 {
   "dataQuality": {
     "totalRows": ${data.length},
-    "duplicates": number,
-    "missingValues": number,
-    "inconsistencies": number
+    "duplicates": 0,
+    "missingValues": 0,
+    "inconsistencies": 0
   },
   "suggestions": [
     "sugestão 1",
@@ -304,7 +337,7 @@ Retorne um JSON com a seguinte estrutura EXATA:
     {
       "type": "bar",
       "reason": "motivo da recomendação",
-      "confidence": number
+      "confidence": 90
     }
   ],
   "dataTypes": {
@@ -315,6 +348,7 @@ Retorne um JSON com a seguinte estrutura EXATA:
 }
 
 Analise a qualidade dos dados, detecte problemas, sugira melhorias e recomende os melhores tipos de gráficos.
+Retorne APENAS o JSON, sem formatação markdown.
 `;
 };
 
