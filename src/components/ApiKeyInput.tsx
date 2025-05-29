@@ -13,17 +13,17 @@ interface ApiKeyInputProps {
 }
 
 export const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ onApiKeySet, hasApiKey }) => {
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState('AIzaSyAm8mkIVSDvX321s9FW6LTeMyAluMa7kjo');
   const [showApiKey, setShowApiKey] = useState(false);
-  const [isConfigured, setIsConfigured] = useState(hasApiKey);
+  const [isConfigured, setIsConfigured] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    const savedApiKey = localStorage.getItem('gemini_api_key');
-    if (savedApiKey) {
-      setIsConfigured(true);
-      onApiKeySet(savedApiKey);
-    }
+    // Configurar automaticamente com a nova API key
+    const defaultApiKey = 'AIzaSyAm8mkIVSDvX321s9FW6LTeMyAluMa7kjo';
+    localStorage.setItem('gemini_api_key', defaultApiKey);
+    setIsConfigured(true);
+    onApiKeySet(defaultApiKey);
   }, [onApiKeySet]);
 
   const handleSaveApiKey = () => {

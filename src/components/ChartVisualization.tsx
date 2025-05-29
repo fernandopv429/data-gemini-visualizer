@@ -1,10 +1,9 @@
-
 import React, { useState, useMemo } from 'react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ChartBar, ChartLine, ChartPie, Brain, Scatter as ScatterIcon } from 'lucide-react';
+import { ChartBar, ChartLine, ChartPie, Brain, Scatter3D } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ChartVisualizationProps {
@@ -27,9 +26,9 @@ export const ChartVisualization: React.FC<ChartVisualizationProps> = ({
 }) => {
   const [activeChart, setActiveChart] = useState('bar');
 
-  // Usar apenas os dados processados pela IA
+  // Usar os dados exatos processados pela IA
   const { barData, lineData, pieData, scatterData, availableCharts } = useMemo(() => {
-    if (!analysis?.chartData) {
+    if (!data || data.length === 0 || !analysis?.chartData) {
       return { barData: [], lineData: [], pieData: [], scatterData: [], availableCharts: ['bar'] };
     }
     
@@ -42,7 +41,7 @@ export const ChartVisualization: React.FC<ChartVisualizationProps> = ({
       scatterData: chartData.scatter || [],
       availableCharts: Object.keys(chartData).filter(key => chartData[key] && chartData[key].length > 0)
     };
-  }, [analysis]);
+  }, [data, analysis]);
 
   const renderBarChart = () => (
     <ResponsiveContainer width="100%" height={400}>
@@ -126,30 +125,33 @@ export const ChartVisualization: React.FC<ChartVisualizationProps> = ({
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>Relatório de Análise - Gemini AI</span>
-          <Badge variant="secondary">
-            <Brain className="w-3 h-3 mr-1" />
-            IA Gemini
-          </Badge>
+          <span>Relatório Completo de Visualização</span>
+          <div className="flex gap-2">
+            <Badge variant="outline">{data.length} registros processados</Badge>
+            <Badge variant="secondary">
+              <Brain className="w-3 h-3 mr-1" />
+              Análise IA
+            </Badge>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
         <Tabs value={activeChart} onValueChange={setActiveChart}>
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="bar" disabled={!availableCharts.includes('bar')}>
-              <ChartBar className="w-4 h-4 mr-2" />
+            <TabsTrigger value="bar" className="flex items-center gap-2" disabled={!availableCharts.includes('bar')}>
+              <ChartBar className="w-4 h-4" />
               Barras
             </TabsTrigger>
-            <TabsTrigger value="line" disabled={!availableCharts.includes('line')}>
-              <ChartLine className="w-4 h-4 mr-2" />
+            <TabsTrigger value="line" className="flex items-center gap-2" disabled={!availableCharts.includes('line')}>
+              <ChartLine className="w-4 h-4" />
               Linhas
             </TabsTrigger>
-            <TabsTrigger value="pie" disabled={!availableCharts.includes('pie')}>
-              <ChartPie className="w-4 h-4 mr-2" />
+            <TabsTrigger value="pie" className="flex items-center gap-2" disabled={!availableCharts.includes('pie')}>
+              <ChartPie className="w-4 h-4" />
               Pizza
             </TabsTrigger>
-            <TabsTrigger value="scatter" disabled={!availableCharts.includes('scatter')}>
-              <ScatterIcon className="w-4 h-4 mr-2" />
+            <TabsTrigger value="scatter" className="flex items-center gap-2" disabled={!availableCharts.includes('scatter')}>
+              <Scatter3D className="w-4 h-4" />
               Dispersão
             </TabsTrigger>
           </TabsList>
