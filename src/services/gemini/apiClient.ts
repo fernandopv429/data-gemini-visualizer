@@ -1,8 +1,9 @@
 
+
 import { GeminiResponse, GeminiConfig } from './types';
 
-// Configurações da API - usando o modelo Flash correto
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+// Configurações da API - usando o modelo Flash 2.5
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
 
 /**
  * Cliente base para chamadas à API Gemini
@@ -21,7 +22,7 @@ export class GeminiApiClient {
    * Faz uma chamada à API Gemini
    */
   async makeRequest(prompt: string): Promise<GeminiResponse> {
-    console.log('Fazendo chamada para a API Gemini Flash:', this.config.apiUrl);
+    console.log('Fazendo chamada para a API Gemini Flash 2.0:', this.config.apiUrl);
     console.log('Usando API Key:', this.config.apiKey.substring(0, 10) + '...');
     
     const response = await fetch(`${this.config.apiUrl}?key=${this.config.apiKey}`, {
@@ -87,3 +88,4 @@ export class GeminiApiClient {
     }
   }
 }
+
