@@ -1,9 +1,7 @@
-
-
 import { GeminiResponse, GeminiConfig } from './types';
 
-// Configurações da API - usando o modelo Flash 2.5
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
+// Configurações da API - usando o modelo Flash 2.0 correto
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 /**
  * Cliente base para chamadas à API Gemini
@@ -88,4 +86,3 @@ export class GeminiApiClient {
     }
   }
 }
-
