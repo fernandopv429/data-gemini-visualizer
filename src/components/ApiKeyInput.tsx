@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Key, Eye, EyeOff, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -24,6 +23,7 @@ export const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ onApiKeySet, hasApiKey
     localStorage.setItem('gemini_api_key', defaultApiKey);
     setIsConfigured(true);
     onApiKeySet(defaultApiKey);
+    console.log('API Key configurada automaticamente:', defaultApiKey);
   }, [onApiKeySet]);
 
   const handleSaveApiKey = () => {
