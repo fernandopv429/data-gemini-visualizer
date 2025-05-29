@@ -1,9 +1,10 @@
+
 import React, { useState, useMemo } from 'react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ChartBar, ChartLine, ChartPie, Brain, Scatter3D } from 'lucide-react';
+import { ChartBar, ChartLine, ChartPie, Brain, Scatter as ScatterIcon } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ChartVisualizationProps {
@@ -151,7 +152,7 @@ export const ChartVisualization: React.FC<ChartVisualizationProps> = ({
               Pizza
             </TabsTrigger>
             <TabsTrigger value="scatter" className="flex items-center gap-2" disabled={!availableCharts.includes('scatter')}>
-              <Scatter3D className="w-4 h-4" />
+              <ScatterIcon className="w-4 h-4" />
               Dispersão
             </TabsTrigger>
           </TabsList>
